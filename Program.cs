@@ -32,26 +32,38 @@ namespace CSharpTest2
             DataTable table = new DataTable();
             table.Columns.Add("EVENT_TXT_SEQ_NO", typeof(string));
             table.Columns.Add("SCRAP_CODE", typeof(string));
-            table.Columns.Add("SCRAP_QTY", typeof(int));
+            table.Columns.Add("SCRAP_QTY", typeof(string)); // string 타입으로 변경
             
-            // 초기 데이터 추가 (SCRAP_CODE에 "SCRAP" 포함 여부로 타입 구분)
-            table.Rows.Add("EVENT001", "A_NORMAL", 2);
-            table.Rows.Add("EVENT001", "B_SCRAP", 2);
-            table.Rows.Add("EVENT001", "C_SCRAP", 1);
-            table.Rows.Add("EVENT001", "D_NORMAL", 9);
-            table.Rows.Add("EVENT001", "TOTAL", 6);
-            table.Rows.Add("EVENT002", "A_NORMAL", 4);
-            table.Rows.Add("EVENT002", "B_NORMAL", 3);
-            table.Rows.Add("EVENT002", "C_SCRAP", 3);
-            table.Rows.Add("EVENT002", "D_NORMAL", 3);
-            table.Rows.Add("EVENT002", "TOTAL", 9);
-            table.Rows.Add("EVENT003", "A_NORMAL", 4);
-            table.Rows.Add("EVENT003", "B_SCRAP", 6);
-            table.Rows.Add("EVENT003", "C_SCRAP", 5);
-            table.Rows.Add("EVENT003", "D_NORMAL", 4);
-            table.Rows.Add("EVENT003", "TOTAL", 7);
+            // 초기 데이터 추가 (SCRAP_QTY를 문자열로 저장)
+            table.Rows.Add("EVENT001", "A_NORMAL", "2");
+            table.Rows.Add("EVENT001", "B_SCRAP", "2");
+            table.Rows.Add("EVENT001", "C_SCRAP", "1");
+            table.Rows.Add("EVENT001", "D_NORMAL", "9");
+            table.Rows.Add("EVENT001", "TOTAL", "6");
+            table.Rows.Add("EVENT002", "A_NORMAL", "4");
+            table.Rows.Add("EVENT002", "B_NORMAL", "3");
+            table.Rows.Add("EVENT002", "C_SCRAP", "3");
+            table.Rows.Add("EVENT002", "D_NORMAL", "3");
+            table.Rows.Add("EVENT002", "TOTAL", "9");
+            table.Rows.Add("EVENT003", "A_NORMAL", "4");
+            table.Rows.Add("EVENT003", "B_SCRAP", "6");
+            table.Rows.Add("EVENT003", "C_SCRAP", "5");
+            table.Rows.Add("EVENT003", "D_NORMAL", "4");
+            table.Rows.Add("EVENT003", "TOTAL", "7");
             
             return table;
+        }
+        
+        /// <summary>
+        /// 문자열 SCRAP_QTY를 정수로 안전하게 변환합니다.
+        /// </summary>
+        /// <param name="scrapQtyString">SCRAP_QTY 문자열</param>
+        /// <returns>변환된 정수값, 변환 실패 시 0</returns>
+        static int ParseScrapQty(string scrapQtyString)
+        {
+            if (int.TryParse(scrapQtyString, out int result))
+                return result;
+            return 0;
         }
         
         /// <summary>
@@ -107,7 +119,7 @@ namespace CSharpTest2
                 return;
             }
             
-            int targetSum = (int)totalRow["SCRAP_QTY"];
+            int targetSum = ParseScrapQty(totalRow["SCRAP_QTY"].ToString());
             int currentSum = CalculateEventSum(dataTable, eventSeqNo, excludeTotal: true);
             
             Console.WriteLine($"목표 총합: {targetSum}");
@@ -153,19 +165,20 @@ namespace CSharpTest2
                 var maxNormalRow = dataTable.AsEnumerable()
                     .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
                                  GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "NORMAL" && 
-                                 (int)row["SCRAP_QTY"] > 0)
-                    .OrderByDescending(row => (int)row["SCRAP_QTY"])
+                                 ParseScrapQty(row["SCRAP_QTY"].ToString()) > 0)
+                    .OrderByDescending(row => ParseScrapQty(row["SCRAP_QTY"].ToString()))
                     .FirstOrDefault();
                 
                 if (maxNormalRow == null) break; // 차감할 NORMAL 항목이 없음
                 
-                int currentValue = (int)maxNormalRow["SCRAP_QTY"];
+                int currentValue = ParseScrapQty(maxNormalRow["SCRAP_QTY"].ToString());
                 string scrapCode = maxNormalRow["SCRAP_CODE"].ToString();
                 
-                maxNormalRow["SCRAP_QTY"] = currentValue - 1;
+                int newValue = currentValue - 1;
+                maxNormalRow["SCRAP_QTY"] = newValue.ToString();
                 reductionNeeded--;
                 
-                Console.WriteLine($"  {scrapCode}: {currentValue} → {currentValue - 1} (차감량: 1)");
+                Console.WriteLine($"  {scrapCode}: {currentValue} → {newValue} (차감량: 1)");
             }
             
             return reductionNeeded;
@@ -185,19 +198,20 @@ namespace CSharpTest2
                 var maxScrapRow = dataTable.AsEnumerable()
                     .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
                                  GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "SCRAP" && 
-                                 (int)row["SCRAP_QTY"] > 0)
-                    .OrderByDescending(row => (int)row["SCRAP_QTY"])
+                                 ParseScrapQty(row["SCRAP_QTY"].ToString()) > 0)
+                    .OrderByDescending(row => ParseScrapQty(row["SCRAP_QTY"].ToString()))
                     .FirstOrDefault();
                 
                 if (maxScrapRow == null) break; // 차감할 SCRAP 항목이 없음
                 
-                int currentValue = (int)maxScrapRow["SCRAP_QTY"];
+                int currentValue = ParseScrapQty(maxScrapRow["SCRAP_QTY"].ToString());
                 string scrapCode = maxScrapRow["SCRAP_CODE"].ToString();
                 
-                maxScrapRow["SCRAP_QTY"] = currentValue - 1;
+                int newValue = currentValue - 1;
+                maxScrapRow["SCRAP_QTY"] = newValue.ToString();
                 reductionNeeded--;
                 
-                Console.WriteLine($"  {scrapCode}: {currentValue} → {currentValue - 1} (차감량: 1)");
+                Console.WriteLine($"  {scrapCode}: {currentValue} → {newValue} (차감량: 1)");
             }
         }
         
@@ -212,7 +226,7 @@ namespace CSharpTest2
             return dataTable.AsEnumerable()
                 .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
                              GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "NORMAL")
-                .All(row => (int)row["SCRAP_QTY"] == 0);
+                .All(row => ParseScrapQty(row["SCRAP_QTY"].ToString()) == 0);
         }
         
         /// <summary>
@@ -232,7 +246,7 @@ namespace CSharpTest2
                 query = query.Where(row => GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) != "TOTAL");
             }
             
-            return query.Sum(row => (int)row["SCRAP_QTY"]);
+            return query.Sum(row => ParseScrapQty(row["SCRAP_QTY"].ToString()));
         }
         
         /// <summary>
@@ -243,7 +257,7 @@ namespace CSharpTest2
         static int CalculateSum(DataTable dataTable)
         {
             return dataTable.AsEnumerable()
-                .Sum(row => (int)row["SCRAP_QTY"]);
+                .Sum(row => ParseScrapQty(row["SCRAP_QTY"].ToString()));
         }
         
         /// <summary>
@@ -266,7 +280,8 @@ namespace CSharpTest2
             {
                 string eventSeqNo = row["EVENT_TXT_SEQ_NO"].ToString();
                 string scrapCode = row["SCRAP_CODE"].ToString();
-                int scrapQty = (int)row["SCRAP_QTY"];
+                string scrapQtyStr = row["SCRAP_QTY"].ToString();
+                int scrapQty = ParseScrapQty(scrapQtyStr);
                 string type = GetTypeFromScrapCode(scrapCode);
                 
                 if (eventSeqNo != currentEvent)

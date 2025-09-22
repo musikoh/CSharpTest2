@@ -1,0 +1,14 @@
+/Users/musikoh/TASK/CSharpTest2/bin/Debug/net9.0/CSharpTest2
+/Users/musikoh/TASK/CSharpTest2/bin/Debug/net9.0/CSharpTest2.deps.json
+/Users/musikoh/TASK/CSharpTest2/bin/Debug/net9.0/CSharpTest2.runtimeconfig.json
+/Users/musikoh/TASK/CSharpTest2/bin/Debug/net9.0/CSharpTest2.dll
+/Users/musikoh/TASK/CSharpTest2/bin/Debug/net9.0/CSharpTest2.pdb
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.GeneratedMSBuildEditorConfig.editorconfig
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.AssemblyInfoInputs.cache
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.AssemblyInfo.cs
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.csproj.CoreCompileInputs.cache
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.dll
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/refint/CSharpTest2.dll
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.pdb
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.genruntimeconfig.cache
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/ref/CSharpTest2.dll

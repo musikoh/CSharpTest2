@@ -33,52 +33,40 @@ namespace CSharpTest2
             table.Columns.Add("EVENT_TXT_SEQ_NO", typeof(string));
             table.Columns.Add("SCRAP_CODE", typeof(string));
             table.Columns.Add("SCRAP_QTY", typeof(int));
-            table.Columns.Add("Type", typeof(string)); // 자동 계산용 컬럼
             
-            // 초기 데이터 추가 (Type은 SCRAP_CODE에 "CRACK" 포함 여부로 자동 설정)
-            AddRowWithAutoType(table, "EVENT001", "A_NORMAL", 2);
-            AddRowWithAutoType(table, "EVENT001", "B_CRACK", 2);
-            AddRowWithAutoType(table, "EVENT001", "C_CRACK", 1);
-            AddRowWithAutoType(table, "EVENT001", "D_NORMAL", 9);
-            AddRowWithAutoType(table, "EVENT001", "TOTAL", 6);
-            AddRowWithAutoType(table, "EVENT002", "A_NORMAL", 4);
-            AddRowWithAutoType(table, "EVENT002", "B_NORMAL", 3);
-            AddRowWithAutoType(table, "EVENT002", "C_CRACK", 3);
-            AddRowWithAutoType(table, "EVENT002", "D_NORMAL", 3);
-            AddRowWithAutoType(table, "EVENT002", "TOTAL", 9);
-            AddRowWithAutoType(table, "EVENT003", "A_NORMAL", 4);
-            AddRowWithAutoType(table, "EVENT003", "B_CRACK", 6);
-            AddRowWithAutoType(table, "EVENT003", "C_CRACK", 5);
-            AddRowWithAutoType(table, "EVENT003", "D_NORMAL", 4);
-            AddRowWithAutoType(table, "EVENT003", "TOTAL", 7);
+            // 초기 데이터 추가 (SCRAP_CODE에 "SCRAP" 포함 여부로 타입 구분)
+            table.Rows.Add("EVENT001", "A_NORMAL", 2);
+            table.Rows.Add("EVENT001", "B_SCRAP", 2);
+            table.Rows.Add("EVENT001", "C_SCRAP", 1);
+            table.Rows.Add("EVENT001", "D_NORMAL", 9);
+            table.Rows.Add("EVENT001", "TOTAL", 6);
+            table.Rows.Add("EVENT002", "A_NORMAL", 4);
+            table.Rows.Add("EVENT002", "B_NORMAL", 3);
+            table.Rows.Add("EVENT002", "C_SCRAP", 3);
+            table.Rows.Add("EVENT002", "D_NORMAL", 3);
+            table.Rows.Add("EVENT002", "TOTAL", 9);
+            table.Rows.Add("EVENT003", "A_NORMAL", 4);
+            table.Rows.Add("EVENT003", "B_SCRAP", 6);
+            table.Rows.Add("EVENT003", "C_SCRAP", 5);
+            table.Rows.Add("EVENT003", "D_NORMAL", 4);
+            table.Rows.Add("EVENT003", "TOTAL", 7);
             
             return table;
         }
         
         /// <summary>
-        /// SCRAP_CODE에 따라 Type을 자동으로 설정하여 행을 추가합니다.
+        /// SCRAP_CODE에 따라 타입을 판단합니다.
         /// </summary>
-        /// <param name="table">DataTable</param>
-        /// <param name="eventSeqNo">EVENT_TXT_SEQ_NO</param>
-        /// <param name="scrapCode">SCRAP_CODE</param>
-        /// <param name="scrapQty">SCRAP_QTY</param>
-        static void AddRowWithAutoType(DataTable table, string eventSeqNo, string scrapCode, int scrapQty)
+        /// <param name="scrapCode">SCRAP_CODE 값</param>
+        /// <returns>타입 문자열 (NORMAL, SCRAP, TOTAL)</returns>
+        static string GetTypeFromScrapCode(string scrapCode)
         {
-            string type;
             if (scrapCode == "TOTAL")
-            {
-                type = "TOTAL";
-            }
-            else if (scrapCode.Contains("CRACK"))
-            {
-                type = "CRACK";
-            }
+                return "TOTAL";
+            else if (scrapCode.Contains("SCRAP"))
+                return "SCRAP";
             else
-            {
-                type = "NORMAL";
-            }
-            
-            table.Rows.Add(eventSeqNo, scrapCode, scrapQty, type);
+                return "NORMAL";
         }
         
         /// <summary>
@@ -110,7 +98,8 @@ namespace CSharpTest2
         {
             // 해당 EVENT의 TOTAL 값 가져오기
             var totalRow = dataTable.AsEnumerable()
-                .FirstOrDefault(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && row["Type"].ToString() == "TOTAL");
+                .FirstOrDefault(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
+                                     row["SCRAP_CODE"].ToString() == "TOTAL");
             
             if (totalRow == null)
             {
@@ -137,15 +126,15 @@ namespace CSharpTest2
             Console.WriteLine("\n1단계: NORMAL 항목 차감");
             reductionNeeded = ReduceEventNormalItems(dataTable, eventSeqNo, reductionNeeded);
             
-            // 2단계: NORMAL 항목들이 모두 0이 되었다면 CRACK 항목들 차감
+            // 2단계: NORMAL 항목들이 모두 0이 되었다면 SCRAP 항목들 차감
             if (reductionNeeded > 0 && AllEventNormalItemsAreZero(dataTable, eventSeqNo))
             {
-                Console.WriteLine("\n2단계: 모든 NORMAL 항목이 0이 되었으므로 CRACK 항목 차감 시작");
-                ReduceEventCrackItems(dataTable, eventSeqNo, reductionNeeded);
+                Console.WriteLine("\n2단계: 모든 NORMAL 항목이 0이 되었으므로 SCRAP 항목 차감 시작");
+                ReduceEventScrapItems(dataTable, eventSeqNo, reductionNeeded);
             }
             else if (reductionNeeded > 0)
             {
-                Console.WriteLine("\n경고: NORMAL 항목이 남아있어 CRACK 항목을 차감할 수 없습니다.");
+                Console.WriteLine("\n경고: NORMAL 항목이 남아있어 SCRAP 항목을 차감할 수 없습니다.");
             }
         }
         
@@ -163,7 +152,7 @@ namespace CSharpTest2
                 // 매번 값이 가장 큰 NORMAL 항목을 찾아서 1씩 차감
                 var maxNormalRow = dataTable.AsEnumerable()
                     .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
-                                 row["Type"].ToString() == "NORMAL" && 
+                                 GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "NORMAL" && 
                                  (int)row["SCRAP_QTY"] > 0)
                     .OrderByDescending(row => (int)row["SCRAP_QTY"])
                     .FirstOrDefault();
@@ -183,29 +172,29 @@ namespace CSharpTest2
         }
         
         /// <summary>
-        /// 특정 EVENT의 CRACK 항목들을 값이 큰 순서대로 1씩 차감합니다.
+        /// 특정 EVENT의 SCRAP 항목들을 값이 큰 순서대로 1씩 차감합니다.
         /// </summary>
         /// <param name="dataTable">처리할 DataTable</param>
         /// <param name="eventSeqNo">EVENT_TXT_SEQ_NO</param>
         /// <param name="reductionNeeded">차감 필요량</param>
-        static void ReduceEventCrackItems(DataTable dataTable, string eventSeqNo, int reductionNeeded)
+        static void ReduceEventScrapItems(DataTable dataTable, string eventSeqNo, int reductionNeeded)
         {
             while (reductionNeeded > 0)
             {
-                // 매번 값이 가장 큰 CRACK 항목을 찾아서 1씩 차감
-                var maxCrackRow = dataTable.AsEnumerable()
+                // 매번 값이 가장 큰 SCRAP 항목을 찾아서 1씩 차감
+                var maxScrapRow = dataTable.AsEnumerable()
                     .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
-                                 row["Type"].ToString() == "CRACK" && 
+                                 GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "SCRAP" && 
                                  (int)row["SCRAP_QTY"] > 0)
                     .OrderByDescending(row => (int)row["SCRAP_QTY"])
                     .FirstOrDefault();
                 
-                if (maxCrackRow == null) break; // 차감할 CRACK 항목이 없음
+                if (maxScrapRow == null) break; // 차감할 SCRAP 항목이 없음
                 
-                int currentValue = (int)maxCrackRow["SCRAP_QTY"];
-                string scrapCode = maxCrackRow["SCRAP_CODE"].ToString();
+                int currentValue = (int)maxScrapRow["SCRAP_QTY"];
+                string scrapCode = maxScrapRow["SCRAP_CODE"].ToString();
                 
-                maxCrackRow["SCRAP_QTY"] = currentValue - 1;
+                maxScrapRow["SCRAP_QTY"] = currentValue - 1;
                 reductionNeeded--;
                 
                 Console.WriteLine($"  {scrapCode}: {currentValue} → {currentValue - 1} (차감량: 1)");
@@ -221,7 +210,8 @@ namespace CSharpTest2
         static bool AllEventNormalItemsAreZero(DataTable dataTable, string eventSeqNo)
         {
             return dataTable.AsEnumerable()
-                .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && row["Type"].ToString() == "NORMAL")
+                .Where(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
+                             GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "NORMAL")
                 .All(row => (int)row["SCRAP_QTY"] == 0);
         }
         
@@ -239,7 +229,7 @@ namespace CSharpTest2
             
             if (excludeTotal)
             {
-                query = query.Where(row => row["Type"].ToString() != "TOTAL");
+                query = query.Where(row => GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) != "TOTAL");
             }
             
             return query.Sum(row => (int)row["SCRAP_QTY"]);
@@ -262,13 +252,13 @@ namespace CSharpTest2
         /// <param name="dataTable">출력할 DataTable</param>
         static void PrintDataTable(DataTable dataTable)
         {
-            Console.WriteLine("EVENT_TXT_SEQ_NO\tSCRAP_CODE\t\tSCRAP_QTY\tType");
+            Console.WriteLine("EVENT_TXT_SEQ_NO\tSCRAP_CODE\t\tSCRAP_QTY\t타입");
             Console.WriteLine("--------------------------------------------------------");
             
             // EVENT별로 정렬하여 출력
             var sortedRows = dataTable.AsEnumerable()
                 .OrderBy(row => row["EVENT_TXT_SEQ_NO"].ToString())
-                .ThenBy(row => row["Type"].ToString() == "TOTAL" ? 1 : 0) // TOTAL 항목을 마지막에 출력
+                .ThenBy(row => GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "TOTAL" ? 1 : 0) // TOTAL 항목을 마지막에 출력
                 .ThenBy(row => row["SCRAP_CODE"].ToString());
             
             string currentEvent = "";
@@ -277,7 +267,7 @@ namespace CSharpTest2
                 string eventSeqNo = row["EVENT_TXT_SEQ_NO"].ToString();
                 string scrapCode = row["SCRAP_CODE"].ToString();
                 int scrapQty = (int)row["SCRAP_QTY"];
-                string type = row["Type"].ToString();
+                string type = GetTypeFromScrapCode(scrapCode);
                 
                 if (eventSeqNo != currentEvent)
                 {

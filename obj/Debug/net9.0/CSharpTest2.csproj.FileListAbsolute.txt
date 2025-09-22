@@ -12,3 +12,4 @@
 /Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.pdb
 /Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.genruntimeconfig.cache
 /Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/ref/CSharpTest2.dll
+/Users/musikoh/TASK/CSharpTest2/obj/Debug/net9.0/CSharpTest2.sourcelink.json

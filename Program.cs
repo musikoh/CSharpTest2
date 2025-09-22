@@ -45,10 +45,10 @@ namespace CSharpTest2
             table.Rows.Add("EVENT002", "C_SCRAP", "3");
             table.Rows.Add("EVENT002", "D_NORMAL", "3");
             table.Rows.Add("EVENT002", "TOTAL", "9");
-            table.Rows.Add("EVENT003", "A_NORMAL", "4");
-            table.Rows.Add("EVENT003", "B_SCRAP", "6");
-            table.Rows.Add("EVENT003", "C_SCRAP", "5");
-            table.Rows.Add("EVENT003", "D_NORMAL", "4");
+            table.Rows.Add("EVENT003", "A_NORMAL", "1");
+            table.Rows.Add("EVENT003", "B_SCRAP", "1");
+            table.Rows.Add("EVENT003", "C_SCRAP", "1");
+            table.Rows.Add("EVENT003", "D_NORMAL", "1");
             table.Rows.Add("EVENT003", "TOTAL", "7");
             
             return table;
@@ -125,12 +125,14 @@ namespace CSharpTest2
             Console.WriteLine($"목표 총합: {targetSum}");
             Console.WriteLine($"현재 총합: {currentSum}");
             
-            if (currentSum <= targetSum)
+            if (currentSum < targetSum)
             {
-                Console.WriteLine("이미 목표 총합 이하입니다. 차감이 필요하지 않습니다.");
+                //여기에 CV 행 추가
+                AddCvRow(dataTable, eventSeqNo, targetSum - currentSum);
                 return;
             }
             
+            // currentSum >= targetSum인 경우 차감 로직 실행
             int reductionNeeded = currentSum - targetSum;
             Console.WriteLine($"차감 필요량: {reductionNeeded}");
             
@@ -147,6 +149,36 @@ namespace CSharpTest2
             else if (reductionNeeded > 0)
             {
                 Console.WriteLine("\n경고: NORMAL 항목이 남아있어 SCRAP 항목을 차감할 수 없습니다.");
+            }
+        }
+        
+        /// <summary>
+        /// CV 행을 TOTAL 행 위에 추가합니다.
+        /// </summary>
+        /// <param name="dataTable">처리할 DataTable</param>
+        /// <param name="eventSeqNo">EVENT_TXT_SEQ_NO</param>
+        /// <param name="difference">차이 수량</param>
+        static void AddCvRow(DataTable dataTable, string eventSeqNo, int difference)
+        {
+            // TOTAL 행을 찾아서 그 위치에 CV 행을 삽입
+            var totalRow = dataTable.AsEnumerable()
+                .FirstOrDefault(row => row["EVENT_TXT_SEQ_NO"].ToString() == eventSeqNo && 
+                                     row["SCRAP_CODE"].ToString() == "TOTAL");
+            
+            if (totalRow != null)
+            {
+                // TOTAL 행의 인덱스를 찾기
+                int totalRowIndex = dataTable.Rows.IndexOf(totalRow);
+                
+                // CV 행을 TOTAL 행 위에 삽입
+                DataRow newRow = dataTable.NewRow();
+                newRow["EVENT_TXT_SEQ_NO"] = eventSeqNo;
+                newRow["SCRAP_CODE"] = "CV";
+                newRow["SCRAP_QTY"] = difference.ToString();
+                
+                dataTable.Rows.InsertAt(newRow, totalRowIndex);
+                
+                Console.WriteLine($"  CV 행 추가: {eventSeqNo}, CV, {difference}");
             }
         }
         
@@ -243,7 +275,10 @@ namespace CSharpTest2
             
             if (excludeTotal)
             {
-                query = query.Where(row => GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) != "TOTAL");
+                query = query.Where(row => {
+                    string scrapCode = row["SCRAP_CODE"].ToString();
+                    return scrapCode != "TOTAL" && scrapCode != "CV";
+                });
             }
             
             return query.Sum(row => ParseScrapQty(row["SCRAP_QTY"].ToString()));
@@ -272,7 +307,12 @@ namespace CSharpTest2
             // EVENT별로 정렬하여 출력
             var sortedRows = dataTable.AsEnumerable()
                 .OrderBy(row => row["EVENT_TXT_SEQ_NO"].ToString())
-                .ThenBy(row => GetTypeFromScrapCode(row["SCRAP_CODE"].ToString()) == "TOTAL" ? 1 : 0) // TOTAL 항목을 마지막에 출력
+                .ThenBy(row => {
+                    string scrapCode = row["SCRAP_CODE"].ToString();
+                    if (scrapCode == "TOTAL") return 2; // TOTAL을 가장 마지막에
+                    else if (scrapCode == "CV") return 1; // CV를 TOTAL 바로 위에
+                    else return 0; // 나머지는 먼저
+                })
                 .ThenBy(row => row["SCRAP_CODE"].ToString());
             
             string currentEvent = "";
